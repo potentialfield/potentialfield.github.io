@@ -24,16 +24,15 @@ function draw() {
   dist_x = ball_x - planet_x;
   dist_y = ball_y - planet_y;
   dist_sqr = dist_x * dist_x + dist_y * dist_y; // km^2
+  dist = Math.pow(dist_sqr, 0.5);
   dist_sqr1000 = dist_sqr * Math.pow(1000, 2); // m^2 
  
-  
   accel = planet_m / dist_sqr1000;  // N
   accel /= 7.347 * Math.pow(10,22); // m/s^2
   // print(accel); // .002697394385184527
 
-  theta = Math.atan2(dist_y, dist_x);
-  accel_y = -1 * accel * Math.sin(theta);
-  accel_x = -1 * accel * Math.cos(theta);
+  accel_y = - accel * dist_y / Math.pow(dist_sqr,0.5);
+  accel_x = - accel * dist_x / Math.pow(dist_sqr,0.5);
   
   print(Math.pow(dist_sqr, 0.5), theta);
   
