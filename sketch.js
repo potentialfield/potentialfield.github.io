@@ -6,8 +6,8 @@
 
 let buttons = [
 ['r^-1', 80, 570, 10, [101,198,196]],
-['r^-2', 170, 570, 10, [64,138,180]],
-['r^-3', 260, 570, 10, [48,146,134]]
+['r^-2', 170, 570, 10, [156,41,127]],
+['r^-3', 260, 570, 10, [206,221,239]]
 ];
 let pressed_button = -1;
 
@@ -25,6 +25,10 @@ function setup() {
 
 }
 
+/*
+* Check if one of the "add potential"
+* buttons was clicked
+*/
 function mouseClicked() {
   for (let i = 0; i < buttons.length; i++) {
     button = buttons[i];
@@ -37,6 +41,12 @@ function mouseClicked() {
   }
 }
 
+/*
+* If the mouse is pressed and
+* an "add potential" button was 
+* pressed, then start creating a planet
+*/
+
 function mousePressed() {
   if (pressed_button >= 0) {
     pressed = true;
@@ -45,10 +55,18 @@ function mousePressed() {
   }
 }
 
+/*
+* Upon mouse release, if the user
+* was making a planet, then add that
+* planet to the circles array. Will only do this
+* for min radius 10 and max radius 200.
+*/
 function mouseReleased() {
   if (pressed) {
-    let radius = dist(mouseX, mouseY, center_x, center_y); 
-    circles.push([center_x, center_y, radius, pressed_button]);
+    let radius = dist(mouseX, mouseY, center_x, center_y);
+    if (radius > 10 && radius < 200) { 
+    	circles.push([center_x, center_y, radius, pressed_button]);
+	}
     pressed = false;
     pressed_button = -1;
     cursor(ARROW);
@@ -107,39 +125,40 @@ function drawPlanet(crc) {
 }
 
 function drawPlanetGradient(x, y, radius, col) {
-	let isBigPlanet = radius > 100;
-	let red = Math.max(col[0]-radius, 17);
-	let green = Math.max(col[1]-radius, 63);
-	let blue = Math.max(col[2]-radius, 90);
-	let counter = 0; // determine which colour to increment
+	
+	let isBigPlanet = radius > 125;
 
-	// Initialize fill colour
-	fill(color(red, green, blue));
+	fill(
+		color(
+			Math.max(col[0]-radius, 10),
+			Math.max(col[1]-radius, 43),
+			Math.max(col[2]-radius, 90),
+		)
+	);
 
 	for (let r = Math.floor(radius); r > 0; r--) {
-	
-		if (r % 3 == 0) {
-			if (isBigPlanet) {
-				if (counter % 3 == 0) {
-					red += 1;
-				} else if (counter % 3 == 1) {
-					green += 1;
-				} else {
-					blue += 1;
-				}
-				fill(red, green, blue);
-			} else {
+		if (isBigPlanet) {
+			if (r % 4 == 0) {
 				fill(
 					color(
-						Math.min(col[0]-r, col[0]),
-						Math.min(col[1]-r, col[1]),
-						Math.min(col[2]-r, col[2]),
+						Math.max(col[0]-r, 15),
+						Math.max(col[1]-r, 20),
+						Math.max(col[2]-r, 40),
+					)
+				);
+			}
+		} else {
+			if (r % 3 == 0) {
+				fill(
+					color(
+						Math.max(col[0]-r, 10),
+						Math.max(col[1]-r, 43),
+						Math.max(col[2]-r, 70),
 					)
 				);
 			}
 		}
-
-		counter++;
+		
 		circle(x, y, r);
 	
 	}
