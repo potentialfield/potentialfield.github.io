@@ -1,22 +1,37 @@
-var buttons = [['r^-1', 90, 455, 10]];
-var pressed_button = -1;
 
-var pressed = false;
-var center_x = 0;
-var center_y = 0;
+/*
+* each item in buttons: [label, x, y, radius, rgb color1]
+* ENSURE G AND B VALUES ARE ABOVE 75
+*/
 
-var circles = [];
+let buttons = [
+['r^-1', 80, 570, 10, [101,198,196]],
+['r^-2', 170, 570, 10, [64,138,180]],
+['r^-3', 260, 570, 10, [48,146,134]]
+];
+let pressed_button = -1;
+
+let pressed = false;
+let center_x = 0;
+let center_y = 0;
+
+let circles = [];
+let stars = [];
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(900, 600);  
+  generateStars(250);
+  textFont("Roboto");
+
 }
 
 function mouseClicked() {
-  for (var i = 0; i < buttons.length; i++) {
+  for (let i = 0; i < buttons.length; i++) {
     button = buttons[i];
     r = dist(mouseX, mouseY, button[1], button[2]);
     if (r < button[3]) {
       pressed_button = i;
+      cursor(CROSS);
       break;
     }
   }
@@ -32,32 +47,103 @@ function mousePressed() {
 
 function mouseReleased() {
   if (pressed) {
-    radius = dist(mouseX, mouseY, center_x, center_y); 
+    let radius = dist(mouseX, mouseY, center_x, center_y); 
     circles.push([center_x, center_y, radius, pressed_button]);
     pressed = false;
     pressed_button = -1;
+    cursor(ARROW);
   }
 }
 
 function draw() {
-  background(200);
 
+  // Render stars and background
+  background(color(5, 22, 40));
+  drawStars();
+
+  // Render circles
   for (crc of circles) {
-    circle(crc[0], crc[1], crc[2]);
-    text("" + crc[3] , crc[0]-1, crc[1]);
+  	
+  	drawPlanet(crc);
+
+    fill(255);
+    noStroke();
+    text(button[0], crc[0]-2, crc[1]);
   }
   
+  // Click and drag to create planet
   if (pressed) {
-    line(center_x, center_y, mouseX, mouseY);
+	stroke(255);
+	line(center_x, center_y, mouseX, mouseY);
+	noStroke();
   }
 
+  // Draw toolbar buttons
   for (button of buttons) {
-    draw_button(button);
+    drawButton(button);
   }
+
 }
 
-function draw_button(button) {
+function drawButton(button) {
   textSize(12);
-  text('Add Planet ' + button[0], button[1]-100, button[2]);
+  fill(255);
+  text('Add ' + button[0], button[1]-60, button[2]+5);
+  fill(color(button[4][0],button[4][1],button[4][2]));
+  
+  stroke(255);
   circle(button[1], button[2], button[3]);
+  noStroke();
+}
+
+/*
+* Drawing planets and stars and sky
+*/
+
+function drawPlanet(crc) {
+	button = buttons[crc[3]];
+	startColor  = [button[4][0],button[4][1],button[4][2]];
+  	drawPlanetGradient(crc[0], crc[1], crc[2], startColor);
+}
+
+function drawPlanetGradient(x, y, radius, col) {
+	fill(
+		color(
+			Math.max(col[0]-radius, 17),
+			Math.max(col[1]-radius, 63),
+			Math.max(col[2]-radius, 90)
+		)
+	);
+
+	for (let r = Math.floor(radius); r > 0; r--) {
+		if (r % 3 == 0) {
+			fill(
+				color(
+					Math.max(col[0]-r, 17),
+					Math.max(col[1]-r, 63),
+					Math.max(col[2]-r, 90)
+				)
+			);
+		}
+		circle(x, y, r);
+	}
+}
+
+// For generating stars in the background
+function generateStars(numStars) {
+	for (let i = 0; i < numStars; i++) {
+		let x = random(900);
+		let y = random(540);	
+		stars.push([x,y]);
+	}
+}
+
+function drawStars() {
+	for (let i = 0; i < stars.length; i++) {
+		// alternate between white and light yellow
+		i % 2 == 0 ? fill(255) : fill(color(255,246,221));
+		let x = stars[i][0];
+		let y = stars[i][1];
+		circle(x,y,1);
+	}
 }
