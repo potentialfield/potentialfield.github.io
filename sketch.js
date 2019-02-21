@@ -18,6 +18,9 @@ let center_y = 0;
 let circles = [];
 let stars = [];
 
+const MIN_RADIUS = 10;
+const MAX_RADIUS = 200;
+
 function setup() {
   createCanvas(900, 600);  
   generateStars(250);
@@ -59,12 +62,12 @@ function mousePressed() {
 * Upon mouse release, if the user
 * was making a planet, then add that
 * planet to the circles array. Will only do this
-* for min radius 10 and max radius 200.
+* for radii within set bounds.
 */
 function mouseReleased() {
   if (pressed) {
     let radius = dist(mouseX, mouseY, center_x, center_y);
-    if (radius > 10 && radius < 200) { 
+    if (radius > MIN_RADIUS && radius < MAX_RADIUS) { 
     	circles.push([center_x, center_y, radius, pressed_button]);
 	}
     pressed = false;
@@ -90,16 +93,31 @@ function draw() {
   }
   
   // Click and drag to create planet
+  // and display message if drawn
+  // radius is out of range
   if (pressed) {
+  	createPlanetStr = "";
 	stroke(255);
+	currRadius = dist(mouseX, mouseY, center_x, center_y);
 	line(center_x, center_y, mouseX, mouseY);
 	noStroke();
+	if (currRadius < MIN_RADIUS) {
+		createPlanetStr += "Radius too small";
+	} else if (currRadius > MAX_RADIUS) {
+		createPlanetStr += "Radius too large";
+	}
+	// Display message if drawing planet
+  	// and it's out of set radius range
+  	fill(255);
+  	text(createPlanetStr, 300, 575);
   }
 
   // Draw toolbar buttons
   for (button of buttons) {
     drawButton(button);
   }
+
+
 
 }
 
