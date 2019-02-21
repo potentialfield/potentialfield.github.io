@@ -107,25 +107,41 @@ function drawPlanet(crc) {
 }
 
 function drawPlanetGradient(x, y, radius, col) {
-	fill(
-		color(
-			Math.max(col[0]-radius, 17),
-			Math.max(col[1]-radius, 63),
-			Math.max(col[2]-radius, 90)
-		)
-	);
+	let isBigPlanet = radius > 100;
+	let red = Math.max(col[0]-radius, 17);
+	let green = Math.max(col[1]-radius, 63);
+	let blue = Math.max(col[2]-radius, 90);
+	let counter = 0; // determine which colour to increment
+
+	// Initialize fill colour
+	fill(color(red, green, blue));
 
 	for (let r = Math.floor(radius); r > 0; r--) {
+	
 		if (r % 3 == 0) {
-			fill(
-				color(
-					Math.max(col[0]-r, 17),
-					Math.max(col[1]-r, 63),
-					Math.max(col[2]-r, 90)
-				)
-			);
+			if (isBigPlanet) {
+				if (counter % 3 == 0) {
+					red += 1;
+				} else if (counter % 3 == 1) {
+					green += 1;
+				} else {
+					blue += 1;
+				}
+				fill(red, green, blue);
+			} else {
+				fill(
+					color(
+						Math.min(col[0]-r, col[0]),
+						Math.min(col[1]-r, col[1]),
+						Math.min(col[2]-r, col[2]),
+					)
+				);
+			}
 		}
+
+		counter++;
 		circle(x, y, r);
+	
 	}
 }
 
