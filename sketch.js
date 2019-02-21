@@ -109,7 +109,7 @@ function draw() {
 	// Display message if drawing planet
   	// and it's out of set radius range
   	fill(255);
-  	text(createPlanetStr, 300, 575);
+  	text(createPlanetStr, mouseX+15, mouseY+15);
   }
 
   // Draw toolbar buttons
