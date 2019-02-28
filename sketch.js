@@ -1,12 +1,35 @@
+const balls = [];
+
+
 function setup() {
   createCanvas(640, 480);
 }
 
+
 function draw() {
-  if (mouseIsPressed) {
-    fill(0);
-  } else {
-    fill(255);
+  background(200);
+  for (const ball of balls) {
+    ball.draw();
   }
-  ellipse(mouseX, mouseY, 80, 80);
+}
+
+
+class Ball {
+
+  constructor(r, v, a, m) {
+    this.r = r;
+    this.v = v;
+    this.a = a;
+    this.m = m;
+  }
+
+  draw() {
+    fill(color(255, 255, 255));
+    circle(this.r.x, this.r.y, this.m);
+  }
+}
+
+
+function mousePressed() {
+  append(balls, new Ball(createVector(mouseX, mouseY), 0, 0, 10));
 }
