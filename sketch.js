@@ -1,4 +1,5 @@
 const balls = [];
+let prev_mouse_pos = null;
 
 
 function setup() {
@@ -11,6 +12,7 @@ function draw() {
   for (const ball of balls) {
     ball.draw();
   }
+  moveBalls();
 }
 
 
@@ -31,5 +33,26 @@ class Ball {
 
 
 function mousePressed() {
-  append(balls, new Ball(createVector(mouseX, mouseY), 0, 0, 10));
+  prev_mouse_pos = createVector(mouseX, mouseY);
+}
+
+
+function mouseReleased() {
+  if (prev_mouse_pos !== null) {
+    const curr_mouse_pos = createVector(mouseX, mouseY);
+    append(balls, new Ball(
+        curr_mouse_pos,
+        p5.Vector.sub(curr_mouse_pos, prev_mouse_pos).div(20),
+        0,
+        10,
+    ));
+    prev_mouse_pos = null;
+  }
+}
+
+
+function moveBalls() {
+  for (const ball of balls) {
+    ball.r.add(ball.v);
+  }
 }
