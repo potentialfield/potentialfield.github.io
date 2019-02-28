@@ -1,4 +1,7 @@
 const balls = [];
+const potentials = [];
+const potential_keys = {"1": 1, "2": 2, "3": 3, "4": 4};
+let prev_key = null;
 let prev_mouse_pos = null;
 
 
@@ -12,8 +15,12 @@ function draw() {
   for (const ball of balls) {
     ball.draw();
   }
+  for (const pot of potentials) {
+    pot.draw();
+  }
   moveBalls();
 }
+
 
 
 class Ball {
@@ -32,8 +39,48 @@ class Ball {
 }
 
 
+class Potential {
+
+  constructor(r, k, m) {
+    this.r = r;
+    this.k = k;
+    this.m = m;
+  }
+
+  draw() {
+    switch (this.k) {
+      case 1: fill(color(255, 0, 0)); break;
+      case 2: fill(color(0, 255, 0)); break;
+      case 3: fill(color(0, 0, 255)); break;
+      case 4: fill(color(0, 0, 0)); break;
+    }
+    circle(this.r.x, this.r.y, this.m);
+  }
+}
+
+
+
+function keyPressed() {
+  prev_key = key;
+}
+
+
+function keyReleased() {
+  prev_key = null;
+}
+
+
 function mousePressed() {
-  prev_mouse_pos = createVector(mouseX, mouseY);
+  const curr_mouse_pos = createVector(mouseX, mouseY);
+  if (prev_key in potential_keys) {
+    append(potentials, new Potential(
+        curr_mouse_pos,
+        potential_keys[prev_key],
+        10,
+    ));
+  } else {
+    prev_mouse_pos = curr_mouse_pos;
+  }
 }
 
 
