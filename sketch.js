@@ -18,6 +18,7 @@ function draw() {
   for (const pot of potentials) {
     pot.draw();
   }
+  calculatePotential();
   moveBalls();
 }
 
@@ -55,6 +56,26 @@ class Potential {
       case 4: fill(color(0, 0, 0)); break;
     }
     circle(this.r.x, this.r.y, this.m);
+  }
+
+  update(ball) {
+    const dr = p5.Vector.sub(ball.r, this.r);
+    const r = dr.mag();
+    switch (this.k) {
+    case 1:
+      dr.mult(this.m / Math.pow(r, 1));
+      break;
+    case 2:
+      dr.mult(this.m * 20 / Math.pow(r, 2));
+      break;
+    case 3:
+      dr.mult(this.m * 400 / Math.pow(r, 3));
+      break;
+    case 4:
+      dr.mult(this.m * 8000 / Math.pow(r, 4));
+      break;
+    }
+    ball.v.sub(dr);
   }
 }
 
@@ -94,6 +115,15 @@ function mouseReleased() {
         10,
     ));
     prev_mouse_pos = null;
+  }
+}
+
+
+function calculatePotential() {
+  for (const ball of balls) {
+    for (const pot of potentials) {
+      pot.update(ball);
+    }
   }
 }
 
