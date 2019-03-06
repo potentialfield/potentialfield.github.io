@@ -24,7 +24,6 @@ function draw() {
   dist_x = ball_x - planet_x;
   dist_y = ball_y - planet_y;
   dist_sqr = dist_x * dist_x + dist_y * dist_y; // km^2
-  dist = Math.pow(dist_sqr, 0.5);
   dist_sqr1000 = dist_sqr * Math.pow(1000, 2); // m^2 
  
   accel = planet_m / dist_sqr1000;  // N
@@ -34,7 +33,7 @@ function draw() {
   accel_y = - accel * dist_y / Math.pow(dist_sqr,0.5);
   accel_x = - accel * dist_x / Math.pow(dist_sqr,0.5);
   
-  print(Math.pow(dist_sqr, 0.5), theta);
+  // print(Math.pow(dist_sqr, 0.5), theta);
   
   // print('Acceleration is' + accel_x + ', ' + accel_y);
 
