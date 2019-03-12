@@ -12,13 +12,23 @@ let planet_m = 6.67408 * Math.pow(10,-11) * 5.972 * Math.pow(10, 24) * 7.347 * M
 
 let time_step = 1000; // s
 
+let modulo = 0;
+let count = 0;
+let traj = [];
+let R, G, B;
+
 function setup() {
   createCanvas(2000, 2000);
+  R = floor(random(255))
+  G = floor(random(255))
+  B = floor(random(255))
 }
 
 function draw() {
   background(200);
-  ellipse(ball_x/2000 + 300, ball_y/2000 + 300, ball_s, ball_s);
+
+  fill(255,255,255);
+  stroke(0,0,0);
   ellipse(planet_x + 300, planet_y + 300, planet_s, planet_s);
 
   dist_x = ball_x - planet_x;
@@ -44,45 +54,22 @@ function draw() {
   ball_x += ball_vx * time_step;
   ball_y += ball_vy * time_step;
   // print('Position is' + ball_x + ', ' + ball_y);
-}
 
-function Rocket(x,y,accx,accy,R,G,B,height, width) {
-  this.width = width || 5;
-  this.height = height || 10;
-  this.traj = [];
-  this.count = 0;
-  this.R = R || 0;
-  this.G = G || 0;
-  this.B = B || 0;
-  this.pos = createVector(x, y);
-  this.vel = createVector(0, 0);
-  this.acc = createVector(accx, accy);
-  this.mass = 10;
-  this.Gravity = 1;
+  push();
+  fill(R,G,B,250);
+  translate(ball_x/2000+300, ball_y/2000+300);
+  rotate(createVector(ball_vx, ball_vy).heading());
+  rect(0, 0, 20, 10);
+  pop();
 
-  this.draw = function() {
-    /* Draw Rocket */
-    push();
+  /* Draw trajectory */
+  modulo++;
+  if (modulo % 12 == 0) {
+    traj.push(createVector(ball_x/2000+300,ball_y/2000+300));
+  }
+  for (var i = 0; i < traj.length && i < 64; i++) {
+    fill(R,G,B,255-i*4);
     noStroke();
-    fill(this.R,this.G,this.B,250);
-    translate(this.pos.x, this.pos.y);
-    rotate(this.vel.heading());
-    rect(0, 0, this.width, this.height);
-    pop();
+    ellipse(traj[traj.length - 1 - i].x, traj[traj.length - 1 - i].y, 4, 4);
   }
-
-  this.applyForce = function(force) {
-    this.acc.add(force);
-  }
-
-  this.newton = function () {
-    this.vel.add(this.acc);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
-  }
-
-  this.orbit = function(body) {
-    //add orbit code here
-  }
-
 }
