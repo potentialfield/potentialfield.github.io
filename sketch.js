@@ -1,65 +1,67 @@
-const balls = [];
+const ROCKET_HEIGHT = 20;
+const ROCKET_WIDTH = 10;
+const POTENTIAL_SIZE = 20;
+const TRAJECTORY_SIZE = 4;
+const TRAJECTORY_LENGTH = 255;
+const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
+
+const rockets = [];
 const potentials = [];
 const potential_keys = {"1": 1, "2": 2, "3": 3, "4": 4};
 let prev_key = null;
 let prev_mouse_pos = null;
 
-let modulo = 0;
-let count = 0;
-let traj = [];
-let R, G, B;
-
 
 function setup() {
   createCanvas(2000, 2000);
-  R = floor(random(255))
-  G = floor(random(255))
-  B = floor(random(255))
 }
 
 
 function draw() {
   background(200);
-  for (const ball of balls) {
-    ball.draw();
+  for (const rocket of rockets) {
+    rocket.draw();
   }
   for (const pot of potentials) {
     pot.draw();
   }
   calculatePotential();
-  moveBalls();
+  moveRockets();
 }
 
 
 
-class Ball {
+class Rocket {
 
-  constructor(r, v, a, m) {
+  constructor(r, v, a) {
     this.r = r;
     this.v = v;
     this.a = a;
-    this.m = m;
+    this.traj = [];
+    this.color = [floor(random(255)), floor(random(255)), floor(random(255))];
   }
 
   draw() {
-    fill(color(255, 255, 255));
-
     push();
     stroke(color(0, 0, 0));
-    fill(R,G,B,250);
+    fill(...this.color);
     translate(this.r);
     rotate(this.v.heading());
-    rect(0, 0, 20, 10);
+    rect(0, 0, ROCKET_HEIGHT, ROCKET_WIDTH);
     pop();
 
-    modulo++;
-    if (modulo % 12 == 0) {
-      traj.push(this.r);
+    this.traj.push([this.r.x, this.r.y]);
+    if (this.traj.length > TRAJECTORY_REFRESH) {
+      this.traj.splice(this.traj.length - TRAJECTORY_LENGTH);
     }
-    for (var i = 0; i < traj.length && i < 64; i++) {
-      fill(R,G,B,255-i*4);
+    for (let i = 0; i < this.traj.length && i < TRAJECTORY_LENGTH; i++) {
       noStroke();
-      ellipse(traj[traj.length - 1 - i].x, traj[traj.length - 1 - i].y, 4, 4);
+      fill(...this.color, 255 - i);
+      circle(
+          this.traj[this.traj.length - 1 - i][0],
+          this.traj[this.traj.length - 1 - i][1],
+          TRAJECTORY_SIZE,
+      );
     }
   }
 }
@@ -83,8 +85,8 @@ class Potential {
     circle(this.r.x, this.r.y, this.m);
   }
 
-  update(ball) {
-    const dr = p5.Vector.sub(ball.r, this.r);
+  update(rocket) {
+    const dr = p5.Vector.sub(rocket.r, this.r);
     const r = dr.mag();
     switch (this.k) {
     case 1:
@@ -100,7 +102,7 @@ class Potential {
       dr.mult(this.m * 8000 / Math.pow(r, 4));
       break;
     }
-    ball.v.sub(dr);
+    rocket.v.sub(dr);
   }
 }
 
@@ -122,7 +124,7 @@ function mousePressed() {
     append(potentials, new Potential(
         curr_mouse_pos,
         potential_keys[prev_key],
-        10,
+        POTENTIAL_SIZE,
     ));
   } else {
     prev_mouse_pos = curr_mouse_pos;
@@ -133,11 +135,10 @@ function mousePressed() {
 function mouseReleased() {
   if (prev_mouse_pos !== null) {
     const curr_mouse_pos = createVector(mouseX, mouseY);
-    append(balls, new Ball(
+    append(rockets, new Rocket(
         curr_mouse_pos,
         p5.Vector.sub(curr_mouse_pos, prev_mouse_pos).div(20),
         0,
-        10,
     ));
     prev_mouse_pos = null;
   }
@@ -145,16 +146,16 @@ function mouseReleased() {
 
 
 function calculatePotential() {
-  for (const ball of balls) {
+  for (const rocket of rockets) {
     for (const pot of potentials) {
-      pot.update(ball);
+      pot.update(rocket);
     }
   }
 }
 
 
-function moveBalls() {
-  for (const ball of balls) {
-    ball.r.add(ball.v);
+function moveRockets() {
+  for (const rocket of rockets) {
+    rocket.r.add(rocket.v);
   }
 }
