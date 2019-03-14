@@ -4,9 +4,17 @@ const potential_keys = {"1": 1, "2": 2, "3": 3, "4": 4};
 let prev_key = null;
 let prev_mouse_pos = null;
 
+let modulo = 0;
+let count = 0;
+let traj = [];
+let R, G, B;
+
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(2000, 2000);
+  R = floor(random(255))
+  G = floor(random(255))
+  B = floor(random(255))
 }
 
 
@@ -35,7 +43,24 @@ class Ball {
 
   draw() {
     fill(color(255, 255, 255));
-    circle(this.r.x, this.r.y, this.m);
+
+    push();
+    stroke(color(0, 0, 0));
+    fill(R,G,B,250);
+    translate(this.r);
+    rotate(this.v.heading());
+    rect(0, 0, 20, 10);
+    pop();
+
+    modulo++;
+    if (modulo % 12 == 0) {
+      traj.push(this.r);
+    }
+    for (var i = 0; i < traj.length && i < 64; i++) {
+      fill(R,G,B,255-i*4);
+      noStroke();
+      ellipse(traj[traj.length - 1 - i].x, traj[traj.length - 1 - i].y, 4, 4);
+    }
   }
 }
 
