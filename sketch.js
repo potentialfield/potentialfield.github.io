@@ -15,11 +15,103 @@ let pressed = false;
 let center_x = 0;
 let center_y = 0;
 
-let circles = [];
 let stars = [];
 
 const MIN_RADIUS = 10;
 const MAX_RADIUS = 200;
+const ROCKET_HEIGHT = 20;
+const ROCKET_WIDTH = 10;
+const POTENTIAL_SIZE = 20;
+const TRAJECTORY_SIZE = 1;
+const TRAJECTORY_LENGTH = 255;
+const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
+
+const rockets = [];
+const potentials = [];
+let prev_mouse_pos = null;
+
+
+
+class Rocket {
+
+  constructor(r, v, a) {
+    this.r = r;
+    this.v = v;
+    this.a = a;
+    this.traj = [];
+    this.color = [floor(random(255)), floor(random(255)), floor(random(255))];
+  }
+
+  draw() {
+    push();
+    stroke(color(0, 0, 0));
+    fill(...this.color);
+    translate(this.r);
+    rotate(this.v.heading());
+    rect(0, 0, ROCKET_HEIGHT, ROCKET_WIDTH);
+    pop();
+
+    this.traj.push([this.r.x, this.r.y]);
+    if (this.traj.length > TRAJECTORY_REFRESH) {
+      this.traj.splice(this.traj.length - TRAJECTORY_LENGTH);
+    }
+    for (let i = 0; i < this.traj.length && i < TRAJECTORY_LENGTH; i++) {
+      noStroke();
+      fill(...this.color, 255 - i);
+      circle(
+          this.traj[this.traj.length - 1 - i][0],
+          this.traj[this.traj.length - 1 - i][1],
+          TRAJECTORY_SIZE,
+      );
+    }
+  }
+}
+
+
+class Potential {
+
+  constructor(r, k, m) {
+    this.r = r;
+    this.k = k;
+    this.m = m;
+  }
+
+  draw() {
+    switch (this.k) {
+      case 1: fill(color(255, 0, 0)); break;
+      case 2: fill(color(0, 255, 0)); break;
+      case 3: fill(color(0, 0, 255)); break;
+      case 4: fill(color(0, 0, 0)); break;
+    }
+
+    drawPlanet([this.r.x, this.r.y, this.m, this.k - 1]);
+    fill(255);
+    noStroke();
+    text(buttons[this.k - 1][0], this.r.x - 2, this.r.y);
+  }
+
+  update(rocket) {
+    const dr = p5.Vector.sub(rocket.r, this.r);
+    const r = dr.mag();
+    switch (this.k) {
+    case 1:
+      dr.mult(this.m / Math.pow(r, 1) / 60);
+      break;
+    case 2:
+      dr.mult(this.m / Math.pow(r, 2) / 5);
+      break;
+    case 3:
+      dr.mult(5 * this.m / Math.pow(r, 3));
+      break;
+    case 4:
+      dr.mult(60 * this.m / Math.pow(r, 4));
+      break;
+    }
+    rocket.v.sub(dr);
+  }
+}
+
+
 
 function setup() {
   createCanvas(900, 600);  
@@ -51,6 +143,7 @@ function mouseClicked() {
 */
 
 function mousePressed() {
+  prev_mouse_pos = createVector(mouseX, mouseY);
   if (pressed_button >= 0) {
     pressed = true;
     center_x = mouseX;
@@ -65,15 +158,27 @@ function mousePressed() {
 * for radii within set bounds.
 */
 function mouseReleased() {
+  const curr_mouse_pos = createVector(mouseX, mouseY);
   if (pressed) {
     let radius = dist(mouseX, mouseY, center_x, center_y);
     if (radius > MIN_RADIUS && radius < MAX_RADIUS) { 
-    	circles.push([center_x, center_y, radius, pressed_button]);
+      append(potentials, new Potential(
+          curr_mouse_pos,
+          pressed_button + 1,
+          radius,
+      ));
 	}
     pressed = false;
     pressed_button = -1;
     cursor(ARROW);
+  } else if (prev_mouse_pos !== null) {
+    append(rockets, new Rocket(
+        curr_mouse_pos,
+        p5.Vector.sub(curr_mouse_pos, prev_mouse_pos).div(20),
+        0,
+    ));
   }
+  prev_mouse_pos = null;
 }
 
 function draw() {
@@ -82,16 +187,6 @@ function draw() {
   background(color(5, 22, 40));
   drawStars();
 
-  // Render circles
-  for (crc of circles) {
-  	
-  	drawPlanet(crc);
-
-    fill(255);
-    noStroke();
-    text(button[0], crc[0]-2, crc[1]);
-  }
-  
   // Click and drag to create planet
   // and display message if drawn
   // radius is out of range
@@ -117,9 +212,32 @@ function draw() {
     drawButton(button);
   }
 
-
-
+  for (const rocket of rockets) {
+    rocket.draw();
+  }
+  for (const pot of potentials) {
+    pot.draw();
+  }
+  calculatePotential();
+  moveRockets();
 }
+
+
+function calculatePotential() {
+  for (const rocket of rockets) {
+    for (const pot of potentials) {
+      pot.update(rocket);
+    }
+  }
+}
+
+
+function moveRockets() {
+  for (const rocket of rockets) {
+    rocket.r.add(rocket.v);
+  }
+}
+
 
 function drawButton(button) {
   textSize(12);
