@@ -5,16 +5,15 @@
 */
 
 let buttons = [
-['r^-1', 80, 570, 10, [101,198,196]],
-['r^-2', 170, 570, 10, [156,41,127]],
-['r^-3', 260, 570, 10, [206,221,239]]
+  ['r^-1', 80, 570, 10, [101, 198, 196]],
+  ['r^-2', 170, 570, 10, [156, 41, 127]],
+  ['r^-3', 260, 570, 10, [206, 221, 239]],
 ];
-let pressed_button = -1;
 
+let pressed_button = -1;
 let pressed = false;
 let center_x = 0;
 let center_y = 0;
-
 let stars = [];
 
 const MIN_RADIUS = 10;
@@ -114,10 +113,9 @@ class Potential {
 
 
 function setup() {
-  createCanvas(900, 600);  
+  createCanvas(900, 600);
   generateStars(250);
   textFont("Roboto");
-
 }
 
 /*
@@ -126,8 +124,8 @@ function setup() {
 */
 function mouseClicked() {
   for (let i = 0; i < buttons.length; i++) {
-    button = buttons[i];
-    r = dist(mouseX, mouseY, button[1], button[2]);
+    const button = buttons[i];
+    const r = dist(mouseX, mouseY, button[1], button[2]);
     if (r < button[3]) {
       pressed_button = i;
       cursor(CROSS);
@@ -138,7 +136,7 @@ function mouseClicked() {
 
 /*
 * If the mouse is pressed and
-* an "add potential" button was 
+* an "add potential" button was
 * pressed, then start creating a planet
 */
 
@@ -160,14 +158,14 @@ function mousePressed() {
 function mouseReleased() {
   const curr_mouse_pos = createVector(mouseX, mouseY);
   if (pressed) {
-    let radius = dist(mouseX, mouseY, center_x, center_y);
-    if (radius > MIN_RADIUS && radius < MAX_RADIUS) { 
+    const radius = dist(mouseX, mouseY, center_x, center_y);
+    if (radius > MIN_RADIUS && radius < MAX_RADIUS) {
       append(potentials, new Potential(
           curr_mouse_pos,
           pressed_button + 1,
           radius,
       ));
-	}
+    }
     pressed = false;
     pressed_button = -1;
     cursor(ARROW);
@@ -191,27 +189,26 @@ function draw() {
   // and display message if drawn
   // radius is out of range
   if (pressed) {
-  	createPlanetStr = "";
-	stroke(255);
-	currRadius = dist(mouseX, mouseY, center_x, center_y);
-	line(center_x, center_y, mouseX, mouseY);
-	noStroke();
-	if (currRadius < MIN_RADIUS) {
-		createPlanetStr += "Radius too small";
-	} else if (currRadius > MAX_RADIUS) {
-		createPlanetStr += "Radius too large";
-	}
-	// Display message if drawing planet
-  	// and it's out of set radius range
-  	fill(255);
-  	text(createPlanetStr, mouseX+15, mouseY+15);
+    let createPlanetStr = "";
+    stroke(255);
+    const currRadius = dist(mouseX, mouseY, center_x, center_y);
+    line(center_x, center_y, mouseX, mouseY);
+    noStroke();
+    if (currRadius < MIN_RADIUS) {
+      createPlanetStr = "Radius too small";
+    } else if (currRadius > MAX_RADIUS) {
+      createPlanetStr = "Radius too large";
+    }
+    // Display message if drawing planet
+    // and it's out of set radius range
+    fill(255);
+    text(createPlanetStr, mouseX+15, mouseY+15);
   }
 
   // Draw toolbar buttons
-  for (button of buttons) {
+  for (const button of buttons) {
     drawButton(button);
   }
-
   for (const rocket of rockets) {
     rocket.draw();
   }
@@ -244,7 +241,7 @@ function drawButton(button) {
   fill(255);
   text('Add ' + button[0], button[1]-60, button[2]+5);
   fill(color(button[4][0],button[4][1],button[4][2]));
-  
+
   stroke(255);
   circle(button[1], button[2], button[3]);
   noStroke();
@@ -255,66 +252,64 @@ function drawButton(button) {
 */
 
 function drawPlanet(crc) {
-	button = buttons[crc[3]];
-	startColor  = [button[4][0],button[4][1],button[4][2]];
-  	drawPlanetGradient(crc[0], crc[1], crc[2], startColor);
+  const button = buttons[crc[3]];
+  const startColor = [button[4][0],button[4][1],button[4][2]];
+  drawPlanetGradient(crc[0], crc[1], crc[2], startColor);
 }
 
 function drawPlanetGradient(x, y, radius, col) {
-	
-	let isBigPlanet = radius > 125;
 
-	fill(
-		color(
-			Math.max(col[0]-radius, 10),
-			Math.max(col[1]-radius, 43),
-			Math.max(col[2]-radius, 90),
-		)
-	);
+  const isBigPlanet = radius > 125;
 
-	for (let r = Math.floor(radius); r > 0; r--) {
-		if (isBigPlanet) {
-			if (r % 4 == 0) {
-				fill(
-					color(
-						Math.max(col[0]-r, 15),
-						Math.max(col[1]-r, 20),
-						Math.max(col[2]-r, 40),
-					)
-				);
-			}
-		} else {
-			if (r % 3 == 0) {
-				fill(
-					color(
-						Math.max(col[0]-r, 10),
-						Math.max(col[1]-r, 43),
-						Math.max(col[2]-r, 70),
-					)
-				);
-			}
-		}
-		
-		circle(x, y, r);
-	
-	}
+  fill(color(
+        Math.max(col[0]-radius, 10),
+        Math.max(col[1]-radius, 43),
+        Math.max(col[2]-radius, 90),
+  ));
+
+  for (let r = Math.floor(radius); r > 0; r--) {
+    if (isBigPlanet) {
+      if (r % 4 == 0) {
+        fill(color(
+            Math.max(col[0]-r, 15),
+            Math.max(col[1]-r, 20),
+            Math.max(col[2]-r, 40),
+        ));
+      }
+    } else {
+      if (r % 3 == 0) {
+        fill(color(
+            Math.max(col[0]-r, 10),
+            Math.max(col[1]-r, 43),
+            Math.max(col[2]-r, 70),
+        ));
+      }
+    }
+
+    circle(x, y, r);
+
+  }
 }
 
 // For generating stars in the background
 function generateStars(numStars) {
-	for (let i = 0; i < numStars; i++) {
-		let x = random(900);
-		let y = random(540);	
-		stars.push([x,y]);
-	}
+  for (let i = 0; i < numStars; i++) {
+    const x = random(900);
+    const y = random(540);
+    stars.push([x,y]);
+  }
 }
 
 function drawStars() {
-	for (let i = 0; i < stars.length; i++) {
-		// alternate between white and light yellow
-		i % 2 == 0 ? fill(255) : fill(color(255,246,221));
-		let x = stars[i][0];
-		let y = stars[i][1];
-		circle(x,y,1);
-	}
+  for (let i = 0; i < stars.length; i++) {
+    // alternate between white and light yellow
+    if (i % 2 == 0) {
+      fill(255);
+    } else {
+      fill(color(255, 246, 221));
+    }
+    const x = stars[i][0];
+    const y = stars[i][1];
+    circle(x,y,1);
+  }
 }
