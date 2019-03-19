@@ -1,21 +1,3 @@
-
-/*
-* each item in buttons: [label, x, y, radius, rgb color1]
-* ENSURE G AND B VALUES ARE ABOVE 75
-*/
-
-let buttons = [
-  ['r^-1', 80, 570, 10, [101, 198, 196]],
-  ['r^-2', 170, 570, 10, [156, 41, 127]],
-  ['r^-3', 260, 570, 10, [206, 221, 239]],
-];
-
-let pressed_button = -1;
-let pressed = false;
-let center_x = 0;
-let center_y = 0;
-let stars = [];
-
 const MIN_RADIUS = 10;
 const MAX_RADIUS = 200;
 const ROCKET_HEIGHT = 20;
@@ -25,9 +7,43 @@ const TRAJECTORY_SIZE = 1;
 const TRAJECTORY_LENGTH = 255;
 const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
 
+let buttons;
+const stars = [];
 const rockets = [];
 const potentials = [];
+
 let prev_mouse_pos = null;
+let pressed_button = null;
+let pressed = false;
+let center_x = 0;
+let center_y = 0;
+
+function setup() {
+  // Ensure that the G and B values are above 75
+  buttons = {
+    "1": {
+      name: "r^-1",
+      r: createVector(80, 570),
+      m: 10,
+      color: color(101, 198, 196),
+    },
+    "2": {
+      name: "r^-2",
+      r: createVector(170, 570),
+      m: 10,
+      color: color(156, 41, 127),
+    },
+    "3": {
+      name: "r^-3",
+      r: createVector(260, 570),
+      m: 10,
+      color: color(206, 221, 239),
+    },
+  };
+  createCanvas(900, 600);
+  generateStars(250);
+  textFont("Roboto");
+}
 
 
 
@@ -76,33 +92,26 @@ class Potential {
   }
 
   draw() {
-    switch (this.k) {
-      case 1: fill(color(255, 0, 0)); break;
-      case 2: fill(color(0, 255, 0)); break;
-      case 3: fill(color(0, 0, 255)); break;
-      case 4: fill(color(0, 0, 0)); break;
-    }
-
-    drawPlanet([this.r.x, this.r.y, this.m, this.k - 1]);
+    drawPlanetGradient(this.r.x, this.r.y, this.m, buttons[this.k].color);
     fill(255);
     noStroke();
-    text(buttons[this.k - 1][0], this.r.x - 2, this.r.y);
+    text(buttons[this.k].name, this.r.x - 2, this.r.y);
   }
 
   update(rocket) {
     const dr = p5.Vector.sub(rocket.r, this.r);
     const r = dr.mag();
     switch (this.k) {
-    case 1:
+    case "1":
       dr.mult(this.m / Math.pow(r, 1) / 60);
       break;
-    case 2:
+    case "2":
       dr.mult(this.m / Math.pow(r, 2) / 5);
       break;
-    case 3:
+    case "3":
       dr.mult(5 * this.m / Math.pow(r, 3));
       break;
-    case 4:
+    case "4":
       dr.mult(60 * this.m / Math.pow(r, 4));
       break;
     }
@@ -112,22 +121,16 @@ class Potential {
 
 
 
-function setup() {
-  createCanvas(900, 600);
-  generateStars(250);
-  textFont("Roboto");
-}
-
 /*
 * Check if one of the "add potential"
 * buttons was clicked
 */
 function mouseClicked() {
-  for (let i = 0; i < buttons.length; i++) {
-    const button = buttons[i];
-    const r = dist(mouseX, mouseY, button[1], button[2]);
-    if (r < button[3]) {
-      pressed_button = i;
+  for (const [key, button] of Object.entries(buttons)) {
+    const curr_mouse_pos = createVector(mouseX, mouseY);
+    const radius = button.r.dist(curr_mouse_pos);
+    if (radius < button.m) {
+      pressed_button = key;
       cursor(CROSS);
       break;
     }
@@ -142,7 +145,7 @@ function mouseClicked() {
 
 function mousePressed() {
   prev_mouse_pos = createVector(mouseX, mouseY);
-  if (pressed_button >= 0) {
+  if (pressed_button !== null) {
     pressed = true;
     center_x = mouseX;
     center_y = mouseY;
@@ -162,12 +165,12 @@ function mouseReleased() {
     if (radius > MIN_RADIUS && radius < MAX_RADIUS) {
       append(potentials, new Potential(
           curr_mouse_pos,
-          pressed_button + 1,
+          pressed_button,
           radius,
       ));
     }
     pressed = false;
-    pressed_button = -1;
+    pressed_button = null;
     cursor(ARROW);
   } else if (prev_mouse_pos !== null) {
     append(rockets, new Rocket(
@@ -205,16 +208,18 @@ function draw() {
     text(createPlanetStr, mouseX+15, mouseY+15);
   }
 
-  // Draw toolbar buttons
-  for (const button of buttons) {
-    drawButton(button);
-  }
   for (const rocket of rockets) {
     rocket.draw();
   }
   for (const pot of potentials) {
     pot.draw();
   }
+
+  // draw toolbar buttons over everything else
+  for (const button of Object.values(buttons)) {
+    drawButton(button);
+  }
+
   calculatePotential();
   moveRockets();
 }
@@ -239,11 +244,11 @@ function moveRockets() {
 function drawButton(button) {
   textSize(12);
   fill(255);
-  text('Add ' + button[0], button[1]-60, button[2]+5);
-  fill(color(button[4][0],button[4][1],button[4][2]));
+  text(`Add ${button.name}`, button.r.x - 60, button.r.y + 5);
+  fill(button.color);
 
   stroke(255);
-  circle(button[1], button[2], button[3]);
+  circle(button.r.x, button.r.y, button.m);
   noStroke();
 }
 
@@ -251,13 +256,10 @@ function drawButton(button) {
 * Drawing planets and stars and sky
 */
 
-function drawPlanet(crc) {
-  const button = buttons[crc[3]];
-  const startColor = [button[4][0],button[4][1],button[4][2]];
-  drawPlanetGradient(crc[0], crc[1], crc[2], startColor);
-}
-
-function drawPlanetGradient(x, y, radius, col) {
+function drawPlanetGradient(x, y, radius, colour) {
+  // TODO: fix this hack, come up with HSL way to draw gradient
+  const color_string = colour.toString();
+  const col = color_string.slice(5, -1).split(',');
 
   const isBigPlanet = radius > 125;
 
