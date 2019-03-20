@@ -7,16 +7,15 @@ const TRAJECTORY_SIZE = 1;
 const TRAJECTORY_LENGTH = 255;
 const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
 
-let buttons;
+let buttons = {};
 const stars = [];
 const rockets = [];
 const potentials = [];
 
-let prev_mouse_pos = null;
-let pressed_button = null;
-let pressed = false;
-let center_x = 0;
-let center_y = 0;
+const state = {
+  prev_mouse_pos: null,
+  pressed_button_key: null,
+};
 
 function setup() {
   // Ensure that the G and B values are above 75
@@ -120,67 +119,64 @@ class Potential {
 }
 
 
-
 /*
-* Check if one of the "add potential"
-* buttons was clicked
-*/
-function mouseClicked() {
-  for (const [key, button] of Object.entries(buttons)) {
-    const curr_mouse_pos = createVector(mouseX, mouseY);
-    const radius = button.r.dist(curr_mouse_pos);
-    if (radius < button.m) {
-      pressed_button = key;
-      cursor(CROSS);
-      break;
-    }
-  }
-}
-
-/*
-* If the mouse is pressed and
-* an "add potential" button was
-* pressed, then start creating a planet
-*/
+ * If the mouse is pressed over a button, then update
+ *   the state with the currently pressed button.
+ * Otherwise, start positioning a rocket or expanding a potential.
+ */
 
 function mousePressed() {
-  prev_mouse_pos = createVector(mouseX, mouseY);
-  if (pressed_button !== null) {
-    pressed = true;
-    center_x = mouseX;
-    center_y = mouseY;
+  const curr_mouse_pos = createVector(mouseX, mouseY);
+
+  for (const [key, button] of Object.entries(buttons)) {
+    if (button.r.dist(curr_mouse_pos) < button.m) {
+      state.prev_mouse_pos = null;
+      state.pressed_button_key = key;
+      return;
+    }
   }
+
+  state.prev_mouse_pos = curr_mouse_pos;
 }
 
+
 /*
-* Upon mouse release, if the user
-* was making a planet, then add that
-* planet to the circles array. Will only do this
-* for radii within set bounds.
-*/
+ * If the mouse is released while positioning a rocket
+ *   or expanding a potential, then create that object.
+ * Display a warning message if the potential is too big or small.
+ */
+
 function mouseReleased() {
   const curr_mouse_pos = createVector(mouseX, mouseY);
-  if (pressed) {
-    const radius = dist(mouseX, mouseY, center_x, center_y);
-    if (radius > MIN_RADIUS && radius < MAX_RADIUS) {
-      append(potentials, new Potential(
+
+  if (state.prev_mouse_pos !== null) {
+    if (state.pressed_button_key !== null) {
+      const radius = curr_mouse_pos.dist(state.prev_mouse_pos);
+      if (radius > MIN_RADIUS && radius < MAX_RADIUS) {
+        append(potentials, new Potential(
+            curr_mouse_pos,
+            state.pressed_button_key,
+            radius,
+        ));
+      }
+      // Change cursor after the button action is completed
+      cursor(ARROW);
+      state.pressed_button_key = null;
+    } else {
+      append(rockets, new Rocket(
           curr_mouse_pos,
-          pressed_button,
-          radius,
+          p5.Vector.sub(curr_mouse_pos, state.prev_mouse_pos).div(20),
+          0,
       ));
     }
-    pressed = false;
-    pressed_button = null;
-    cursor(ARROW);
-  } else if (prev_mouse_pos !== null) {
-    append(rockets, new Rocket(
-        curr_mouse_pos,
-        p5.Vector.sub(curr_mouse_pos, prev_mouse_pos).div(20),
-        0,
-    ));
+  } else if (state.pressed_button_key != null) {
+    // Change cursor after clicking on a button, to show that it is active
+    cursor(CROSS);
   }
-  prev_mouse_pos = null;
+
+  state.prev_mouse_pos = null;
 }
+
 
 function draw() {
 
@@ -191,11 +187,13 @@ function draw() {
   // Click and drag to create planet
   // and display message if drawn
   // radius is out of range
-  if (pressed) {
+  const curr_mouse_pos = createVector(mouseX, mouseY);
+  if (state.prev_mouse_pos != null && state.pressed_button_key != null) {
     let createPlanetStr = "";
     stroke(255);
-    const currRadius = dist(mouseX, mouseY, center_x, center_y);
-    line(center_x, center_y, mouseX, mouseY);
+    const currRadius = curr_mouse_pos.dist(state.prev_mouse_pos);
+    line(curr_mouse_pos.x, curr_mouse_pos.y,
+        state.prev_mouse_pos.x, state.prev_mouse_pos.y);
     noStroke();
     if (currRadius < MIN_RADIUS) {
       createPlanetStr = "Radius too small";
