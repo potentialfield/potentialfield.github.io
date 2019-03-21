@@ -1,11 +1,32 @@
-const MIN_RADIUS = 10;
-const MAX_RADIUS = 200;
+const SCREEN_WIDTH = 900;
+const SCREEN_HEIGHT = 600;
+const TOOLBAR_HEIGHT = 60;
+const COLOUR_WHITE = 255;
+const NUM_STARS = 250;
+const STAR_SIZE = 1;
+
+const BUTTON_SIZE = 10;
+const BUTTON_TEXT_SIZE = 12;
+const BUTTON_VERTICAL_POS = 570;
+const BUTTON_HORIZONTAL_POS = 80;
+const BUTTON_HORIZONTAL_SPACING = 90;
+const BUTTON_VERTICAL_TEXT_OFFSET = 5;
+const BUTTON_HORIZONTAL_TEXT_OFFSET = -60;
+
+const POTENTIAL_SIZE = 20;
+const POTENTIAL_MIN_RADIUS = 10;
+const POTENTIAL_BIG_RADIUS = 125;
+const POTENTIAL_MAX_RADIUS = 200;
+const POTENTIAL_TEXT_OFFSET = -2;
+const POTENTIAL_WARNING_MESSAGE_OFFSET = 15;
+
 const ROCKET_HEIGHT = 20;
 const ROCKET_WIDTH = 10;
-const POTENTIAL_SIZE = 20;
 const TRAJECTORY_SIZE = 1;
-const TRAJECTORY_LENGTH = 255;
+const TRAJECTORY_LENGTH = 255;  // Must be less than 256
 const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
+
+const SCALE_DISPLACEMENT_VELOCITY = 1 / 20;
 
 let buttons = {};
 const stars = [];
@@ -20,27 +41,33 @@ const state = {
 function setup() {
   // Ensure that the G and B values are above 75
   buttons = {
-    "1": {
+    1: {
       name: "r^-1",
-      r: createVector(80, 570),
-      m: 10,
+      r: createVector(BUTTON_HORIZONTAL_POS, BUTTON_VERTICAL_POS),
+      m: BUTTON_SIZE,
       color: color(101, 198, 196),
     },
-    "2": {
+    2: {
       name: "r^-2",
-      r: createVector(170, 570),
-      m: 10,
+      r: createVector(
+          BUTTON_HORIZONTAL_POS + BUTTON_HORIZONTAL_SPACING,
+          BUTTON_VERTICAL_POS,
+      ),
+      m: BUTTON_SIZE,
       color: color(156, 41, 127),
     },
-    "3": {
+    3: {
       name: "r^-3",
-      r: createVector(260, 570),
-      m: 10,
+      r: createVector(
+          BUTTON_HORIZONTAL_POS + 2 * BUTTON_HORIZONTAL_SPACING,
+          BUTTON_VERTICAL_POS,
+      ),
+      m: BUTTON_SIZE,
       color: color(206, 221, 239),
     },
   };
-  createCanvas(900, 600);
-  generateStars(250);
+  createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+  generateStars(NUM_STARS);
   textFont("Roboto");
 }
 
@@ -92,9 +119,9 @@ class Potential {
 
   draw() {
     drawPlanetGradient(this.r.x, this.r.y, this.m, buttons[this.k].color);
-    fill(255);
+    fill(COLOUR_WHITE);
     noStroke();
-    text(buttons[this.k].name, this.r.x - 2, this.r.y);
+    text(buttons[this.k].name, this.r.x + POTENTIAL_TEXT_OFFSET, this.r.y);
   }
 
   update(rocket) {
@@ -152,7 +179,7 @@ function mouseReleased() {
   if (state.prev_mouse_pos !== null) {
     if (state.pressed_button_key !== null) {
       const radius = curr_mouse_pos.dist(state.prev_mouse_pos);
-      if (radius > MIN_RADIUS && radius < MAX_RADIUS) {
+      if (radius > POTENTIAL_MIN_RADIUS && radius < POTENTIAL_MAX_RADIUS) {
         append(potentials, new Potential(
             curr_mouse_pos,
             state.pressed_button_key,
@@ -165,7 +192,8 @@ function mouseReleased() {
     } else {
       append(rockets, new Rocket(
           curr_mouse_pos,
-          p5.Vector.sub(curr_mouse_pos, state.prev_mouse_pos).div(20),
+          p5.Vector.sub(curr_mouse_pos, state.prev_mouse_pos)
+              .mult(SCALE_DISPLACEMENT_VELOCITY),
           0,
       ));
     }
@@ -189,21 +217,28 @@ function draw() {
   // radius is out of range
   const curr_mouse_pos = createVector(mouseX, mouseY);
   if (state.prev_mouse_pos != null && state.pressed_button_key != null) {
-    let createPlanetStr = "";
-    stroke(255);
+    stroke(COLOUR_WHITE);
     const currRadius = curr_mouse_pos.dist(state.prev_mouse_pos);
     line(curr_mouse_pos.x, curr_mouse_pos.y,
         state.prev_mouse_pos.x, state.prev_mouse_pos.y);
     noStroke();
-    if (currRadius < MIN_RADIUS) {
-      createPlanetStr = "Radius too small";
-    } else if (currRadius > MAX_RADIUS) {
-      createPlanetStr = "Radius too large";
-    }
+
     // Display message if drawing planet
     // and it's out of set radius range
-    fill(255);
-    text(createPlanetStr, mouseX+15, mouseY+15);
+    fill(COLOUR_WHITE);
+    if (currRadius < POTENTIAL_MIN_RADIUS) {
+      text(
+          "Radius too small",
+          curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+          curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+      );
+    } else if (currRadius > POTENTIAL_MAX_RADIUS) {
+      text(
+          "Radius too large",
+          curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+          curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+      );
+    }
   }
 
   for (const rocket of rockets) {
@@ -240,12 +275,16 @@ function moveRockets() {
 
 
 function drawButton(button) {
-  textSize(12);
-  fill(255);
-  text(`Add ${button.name}`, button.r.x - 60, button.r.y + 5);
+  textSize(BUTTON_TEXT_SIZE);
+  fill(COLOUR_WHITE);
+  text(
+      `Add ${button.name}`,
+      button.r.x + BUTTON_HORIZONTAL_TEXT_OFFSET,
+      button.r.y + BUTTON_VERTICAL_TEXT_OFFSET,
+  );
   fill(button.color);
 
-  stroke(255);
+  stroke(COLOUR_WHITE);
   circle(button.r.x, button.r.y, button.m);
   noStroke();
 }
@@ -259,29 +298,27 @@ function drawPlanetGradient(x, y, radius, colour) {
   const color_string = colour.toString();
   const col = color_string.slice(5, -1).split(',');
 
-  const isBigPlanet = radius > 125;
-
   fill(color(
-        Math.max(col[0]-radius, 10),
-        Math.max(col[1]-radius, 43),
-        Math.max(col[2]-radius, 90),
+        Math.max(col[0] - radius, 10),
+        Math.max(col[1] - radius, 43),
+        Math.max(col[2] - radius, 90),
   ));
 
   for (let r = Math.floor(radius); r > 0; r--) {
-    if (isBigPlanet) {
+    if (radius > POTENTIAL_BIG_RADIUS) {
       if (r % 4 == 0) {
         fill(color(
-            Math.max(col[0]-r, 15),
-            Math.max(col[1]-r, 20),
-            Math.max(col[2]-r, 40),
+            Math.max(col[0] - r, 15),
+            Math.max(col[1] - r, 20),
+            Math.max(col[2] - r, 40),
         ));
       }
     } else {
       if (r % 3 == 0) {
         fill(color(
-            Math.max(col[0]-r, 10),
-            Math.max(col[1]-r, 43),
-            Math.max(col[2]-r, 70),
+            Math.max(col[0] - r, 10),
+            Math.max(col[1] - r, 43),
+            Math.max(col[2] - r, 70),
         ));
       }
     }
@@ -294,9 +331,7 @@ function drawPlanetGradient(x, y, radius, colour) {
 // For generating stars in the background
 function generateStars(numStars) {
   for (let i = 0; i < numStars; i++) {
-    const x = random(900);
-    const y = random(540);
-    stars.push([x,y]);
+    stars.push([random(SCREEN_WIDTH), random(SCREEN_HEIGHT - TOOLBAR_HEIGHT)]);
   }
 }
 
@@ -304,12 +339,12 @@ function drawStars() {
   for (let i = 0; i < stars.length; i++) {
     // alternate between white and light yellow
     if (i % 2 == 0) {
-      fill(255);
+      fill(COLOUR_WHITE);
     } else {
       fill(color(255, 246, 221));
     }
     const x = stars[i][0];
     const y = stars[i][1];
-    circle(x,y,1);
+    circle(x, y, STAR_SIZE);
   }
 }
