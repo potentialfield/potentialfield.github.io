@@ -26,12 +26,13 @@ const TRAJECTORY_SIZE = 1;
 const TRAJECTORY_LENGTH = 255;  // Must be less than 256
 const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
 
+const OUT_OF_BOUNDS = 10000;
 const SCALE_DISPLACEMENT_VELOCITY = 1 / 20;
 
 let buttons = {};
-const stars = [];
-const rockets = [];
-const potentials = [];
+const stars = new Set();
+const rockets = new Set();
+const potentials = new Set();
 
 const state = {
   prev_mouse_pos: null,
@@ -75,10 +76,10 @@ function setup() {
 
 class Rocket {
 
-  constructor(r, v, a) {
+  constructor(r, v) {
     this.r = r;
     this.v = v;
-    this.a = a;
+    this.a = createVector(0, 0);
     this.traj = [];
     this.color = [floor(random(255)), floor(random(255)), floor(random(255))];
   }
@@ -104,6 +105,16 @@ class Rocket {
           this.traj[this.traj.length - 1 - i][1],
           TRAJECTORY_SIZE,
       );
+    }
+  }
+
+  update() {
+    this.v.add(this.a);
+    this.r.add(this.v);
+    this.a = createVector(0, 0);
+
+    if (abs(this.r.x) > OUT_OF_BOUNDS || abs(this.r.y) > OUT_OF_BOUNDS) {
+      rockets.delete(this);
     }
   }
 }
@@ -141,7 +152,7 @@ class Potential {
       dr.mult(60 * this.m / Math.pow(r, 4));
       break;
     }
-    rocket.v.sub(dr);
+    rocket.a.sub(dr);
   }
 }
 
@@ -180,7 +191,7 @@ function mouseReleased() {
     if (state.pressed_button_key !== null) {
       const radius = curr_mouse_pos.dist(state.prev_mouse_pos);
       if (radius > POTENTIAL_MIN_RADIUS && radius < POTENTIAL_MAX_RADIUS) {
-        append(potentials, new Potential(
+        potentials.add(new Potential(
             curr_mouse_pos,
             state.pressed_button_key,
             radius,
@@ -190,11 +201,10 @@ function mouseReleased() {
       cursor(ARROW);
       state.pressed_button_key = null;
     } else {
-      append(rockets, new Rocket(
+      rockets.add(new Rocket(
           curr_mouse_pos,
           p5.Vector.sub(curr_mouse_pos, state.prev_mouse_pos)
               .mult(SCALE_DISPLACEMENT_VELOCITY),
-          0,
       ));
     }
   } else if (state.pressed_button_key != null) {
@@ -269,7 +279,7 @@ function calculatePotential() {
 
 function moveRockets() {
   for (const rocket of rockets) {
-    rocket.r.add(rocket.v);
+    rocket.update();
   }
 }
 
@@ -331,20 +341,20 @@ function drawPlanetGradient(x, y, radius, colour) {
 // For generating stars in the background
 function generateStars(numStars) {
   for (let i = 0; i < numStars; i++) {
-    stars.push([random(SCREEN_WIDTH), random(SCREEN_HEIGHT - TOOLBAR_HEIGHT)]);
+    // Alternate between white and light yellow
+    stars.add({
+      r: createVector(
+          random(SCREEN_WIDTH),
+          random(SCREEN_HEIGHT - TOOLBAR_HEIGHT),
+      ),
+      colour: (i % 2) ? COLOUR_WHITE : color(255, 246, 221),
+    });
   }
 }
 
 function drawStars() {
-  for (let i = 0; i < stars.length; i++) {
-    // alternate between white and light yellow
-    if (i % 2 == 0) {
-      fill(COLOUR_WHITE);
-    } else {
-      fill(color(255, 246, 221));
-    }
-    const x = stars[i][0];
-    const y = stars[i][1];
-    circle(x, y, STAR_SIZE);
+  for (const star of stars) {
+    fill(star.colour);
+    circle(star.r.x, star.r.y, STAR_SIZE);
   }
 }
