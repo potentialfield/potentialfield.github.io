@@ -13,7 +13,6 @@ const BUTTON_HORIZONTAL_SPACING = 90;
 const BUTTON_VERTICAL_TEXT_OFFSET = 5;
 const BUTTON_HORIZONTAL_TEXT_OFFSET = -60;
 
-const POTENTIAL_SIZE = 20;
 const POTENTIAL_MIN_RADIUS = 10;
 const POTENTIAL_BIG_RADIUS = 125;
 const POTENTIAL_MAX_RADIUS = 200;
@@ -28,6 +27,8 @@ const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
 
 const OUT_OF_BOUNDS = 10000;
 const SCALE_DISPLACEMENT_VELOCITY = 1 / 20;
+const SCALE_POTENTIAL_POWER = 30;
+const SCALE_RADIUS_MASS = 1e-5;
 
 let buttons = {};
 const stars = new Set();
@@ -122,14 +123,15 @@ class Rocket {
 
 class Potential {
 
-  constructor(r, k, m) {
+  constructor(r, k, radius) {
     this.r = r;
     this.k = k;
-    this.m = m;
+    this.radius = radius;
+    this.m = SCALE_RADIUS_MASS * Math.pow(this.radius, 3);
   }
 
   draw() {
-    drawPlanetGradient(this.r.x, this.r.y, this.m, buttons[this.k].color);
+    drawPlanetGradient(this.r.x, this.r.y, this.radius, buttons[this.k].color);
     fill(COLOUR_WHITE);
     noStroke();
     text(buttons[this.k].name, this.r.x + POTENTIAL_TEXT_OFFSET, this.r.y);
@@ -138,21 +140,24 @@ class Potential {
   update(rocket) {
     const dr = p5.Vector.sub(rocket.r, this.r);
     const r = dr.mag();
+    const da = dr.mult(this.m).div(-r);
+
+    // da is a unit vector in the correct direction
     switch (this.k) {
     case "1":
-      dr.mult(this.m / Math.pow(r, 1) / 60);
+      dr.mult(SCALE_POTENTIAL_POWER / r);
       break;
     case "2":
-      dr.mult(this.m / Math.pow(r, 2) / 5);
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 2));;
       break;
     case "3":
-      dr.mult(5 * this.m / Math.pow(r, 3));
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 3));;
       break;
     case "4":
-      dr.mult(60 * this.m / Math.pow(r, 4));
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 4));;
       break;
     }
-    rocket.a.sub(dr);
+    rocket.a.add(da);
   }
 }
 
