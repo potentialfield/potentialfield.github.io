@@ -174,6 +174,8 @@ function mousePressed() {
     }
   }
 
+  // Change cursor when positioning a rocket
+  cursor(CROSS);
   state.prev_mouse_pos = curr_mouse_pos;
 }
 
@@ -188,6 +190,9 @@ function mouseReleased() {
   const curr_mouse_pos = createVector(mouseX, mouseY);
 
   if (state.prev_mouse_pos !== null) {
+    // Change cursor after the rocket or potential is created
+    cursor(ARROW);
+
     if (state.pressed_button_key !== null) {
       const radius = curr_mouse_pos.dist(state.prev_mouse_pos);
       if (radius > POTENTIAL_MIN_RADIUS && radius < POTENTIAL_MAX_RADIUS) {
@@ -197,8 +202,6 @@ function mouseReleased() {
             radius,
         ));
       }
-      // Change cursor after the button action is completed
-      cursor(ARROW);
       state.pressed_button_key = null;
     } else {
       rockets.add(new Rocket(
@@ -222,43 +225,44 @@ function draw() {
   background(color(5, 22, 40));
   drawStars();
 
+  for (const pot of potentials) {
+    pot.draw();
+  }
+  for (const rocket of rockets) {
+    rocket.draw();
+  }
+
   // Click and drag to create planet
   // and display message if drawn
   // radius is out of range
   const curr_mouse_pos = createVector(mouseX, mouseY);
-  if (state.prev_mouse_pos != null && state.pressed_button_key != null) {
+  if (state.prev_mouse_pos != null) {
     stroke(COLOUR_WHITE);
-    const currRadius = curr_mouse_pos.dist(state.prev_mouse_pos);
     line(curr_mouse_pos.x, curr_mouse_pos.y,
         state.prev_mouse_pos.x, state.prev_mouse_pos.y);
     noStroke();
 
-    // Display message if drawing planet
-    // and it's out of set radius range
-    fill(COLOUR_WHITE);
-    if (currRadius < POTENTIAL_MIN_RADIUS) {
-      text(
-          "Radius too small",
-          curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
-          curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
-      );
-    } else if (currRadius > POTENTIAL_MAX_RADIUS) {
-      text(
-          "Radius too large",
-          curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
-          curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
-      );
+    // Display message if drawing planet and it's out of set radius range
+    if (state.pressed_button_key != null) {
+      const currRadius = curr_mouse_pos.dist(state.prev_mouse_pos);
+      fill(COLOUR_WHITE);
+      if (currRadius < POTENTIAL_MIN_RADIUS) {
+        text(
+            "Radius too small",
+            curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+            curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+        );
+      } else if (currRadius > POTENTIAL_MAX_RADIUS) {
+        text(
+            "Radius too large",
+            curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+            curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+        );
+      }
     }
   }
 
-  for (const rocket of rockets) {
-    rocket.draw();
-  }
-  for (const pot of potentials) {
-    pot.draw();
-  }
-
-  // draw toolbar buttons over everything else
+  // Draw toolbar buttons over everything else
   for (const button of Object.values(buttons)) {
     drawButton(button);
   }
@@ -316,7 +320,7 @@ function drawPlanetGradient(x, y, radius, colour) {
 
   for (let r = Math.floor(radius); r > 0; r--) {
     if (radius > POTENTIAL_BIG_RADIUS) {
-      if (r % 4 == 0) {
+      if (r % 4 == 0 || r == Math.floor(radius)) {
         fill(color(
             Math.max(col[0] - r, 15),
             Math.max(col[1] - r, 20),
@@ -324,7 +328,7 @@ function drawPlanetGradient(x, y, radius, colour) {
         ));
       }
     } else {
-      if (r % 3 == 0) {
+      if (r % 3 == 0 || r == Math.floor(radius)) {
         fill(color(
             Math.max(col[0] - r, 10),
             Math.max(col[1] - r, 43),
@@ -334,7 +338,6 @@ function drawPlanetGradient(x, y, radius, colour) {
     }
 
     circle(x, y, r);
-
   }
 }
 
