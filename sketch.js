@@ -1,43 +1,86 @@
+const SCREEN_WIDTH = 900;
+const SCREEN_HEIGHT = 600;
+const TOOLBAR_HEIGHT = 60;
+const COLOUR_WHITE = 255;
+const NUM_STARS = 250;
+const STAR_SIZE = 1;
 
-/*
-* each item in buttons: [label, x, y, radius, rgb color1]
-* ENSURE G AND B VALUES ARE ABOVE 75
-*/
+const BUTTON_SIZE = 10;
+const BUTTON_TEXT_SIZE = 12;
+const BUTTON_VERTICAL_POS = 570;
+const BUTTON_HORIZONTAL_POS = 80;
+const BUTTON_HORIZONTAL_SPACING = 90;
+const BUTTON_VERTICAL_TEXT_OFFSET = 5;
+const BUTTON_HORIZONTAL_TEXT_OFFSET = -60;
 
-let buttons = [
-['r^-1', 80, 570, 10, [101,198,196]],
-['r^-2', 170, 570, 10, [156,41,127]],
-['r^-3', 260, 570, 10, [206,221,239]]
-];
-let pressed_button = -1;
+const POTENTIAL_MIN_RADIUS = 10;
+const POTENTIAL_BIG_RADIUS = 125;
+const POTENTIAL_MAX_RADIUS = 200;
+const POTENTIAL_TEXT_OFFSET = -2;
+const POTENTIAL_WARNING_MESSAGE_OFFSET = 15;
 
-let pressed = false;
-let center_x = 0;
-let center_y = 0;
-
-let stars = [];
-
-const MIN_RADIUS = 10;
-const MAX_RADIUS = 200;
 const ROCKET_HEIGHT = 20;
 const ROCKET_WIDTH = 10;
-const POTENTIAL_SIZE = 20;
 const TRAJECTORY_SIZE = 1;
-const TRAJECTORY_LENGTH = 255;
+const TRAJECTORY_LENGTH = 255;  // Must be less than 256
 const TRAJECTORY_REFRESH = 10 * TRAJECTORY_LENGTH;
 
-const rockets = [];
-const potentials = [];
-let prev_mouse_pos = null;
+const OUT_OF_BOUNDS = 10000;
+const SCALE_DISPLACEMENT_VELOCITY = 1 / 20;
+const SCALE_POTENTIAL_POWER = 30;
+const SCALE_RADIUS_MASS = 1e-5;
+
+let buttons = {};
+const stars = new Set();
+const rockets = new Set();
+const potentials = new Set();
+
+const state = {
+  prev_mouse_pos: null,
+  pressed_button_key: null,
+};
+
+function setup() {
+  // Ensure that the G and B values are above 75
+  buttons = {
+    1: {
+      name: "r^-1",
+      r: createVector(BUTTON_HORIZONTAL_POS, BUTTON_VERTICAL_POS),
+      m: BUTTON_SIZE,
+      color: color(101, 198, 196),
+    },
+    2: {
+      name: "r^-2",
+      r: createVector(
+          BUTTON_HORIZONTAL_POS + BUTTON_HORIZONTAL_SPACING,
+          BUTTON_VERTICAL_POS,
+      ),
+      m: BUTTON_SIZE,
+      color: color(156, 41, 127),
+    },
+    3: {
+      name: "r^-3",
+      r: createVector(
+          BUTTON_HORIZONTAL_POS + 2 * BUTTON_HORIZONTAL_SPACING,
+          BUTTON_VERTICAL_POS,
+      ),
+      m: BUTTON_SIZE,
+      color: color(206, 221, 239),
+    },
+  };
+  createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+  generateStars(NUM_STARS);
+  textFont("Roboto");
+}
 
 
 
 class Rocket {
 
-  constructor(r, v, a) {
+  constructor(r, v) {
     this.r = r;
     this.v = v;
-    this.a = a;
+    this.a = createVector(0, 0);
     this.traj = [];
     this.color = [floor(random(255)), floor(random(255)), floor(random(255))];
   }
@@ -65,121 +108,121 @@ class Rocket {
       );
     }
   }
+
+  update() {
+    this.v.add(this.a);
+    this.r.add(this.v);
+    this.a = createVector(0, 0);
+
+    if (abs(this.r.x) > OUT_OF_BOUNDS || abs(this.r.y) > OUT_OF_BOUNDS) {
+      rockets.delete(this);
+    }
+  }
 }
 
 
 class Potential {
 
-  constructor(r, k, m) {
+  constructor(r, k, radius) {
     this.r = r;
     this.k = k;
-    this.m = m;
+    this.radius = radius;
+    this.m = SCALE_RADIUS_MASS * Math.pow(this.radius, 3);
   }
 
   draw() {
-    switch (this.k) {
-      case 1: fill(color(255, 0, 0)); break;
-      case 2: fill(color(0, 255, 0)); break;
-      case 3: fill(color(0, 0, 255)); break;
-      case 4: fill(color(0, 0, 0)); break;
-    }
-
-    drawPlanet([this.r.x, this.r.y, this.m, this.k - 1]);
-    fill(255);
+    drawPlanetGradient(this.r.x, this.r.y, this.radius, buttons[this.k].color);
+    fill(COLOUR_WHITE);
     noStroke();
-    text(buttons[this.k - 1][0], this.r.x - 2, this.r.y);
+    text(buttons[this.k].name, this.r.x + POTENTIAL_TEXT_OFFSET, this.r.y);
   }
 
   update(rocket) {
     const dr = p5.Vector.sub(rocket.r, this.r);
     const r = dr.mag();
+    const da = dr.mult(this.m).div(-r);
+
+    // da is a unit vector in the correct direction
     switch (this.k) {
-    case 1:
-      dr.mult(this.m / Math.pow(r, 1) / 60);
+    case "1":
+      dr.mult(SCALE_POTENTIAL_POWER / r);
       break;
-    case 2:
-      dr.mult(this.m / Math.pow(r, 2) / 5);
+    case "2":
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 2));;
       break;
-    case 3:
-      dr.mult(5 * this.m / Math.pow(r, 3));
+    case "3":
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 3));;
       break;
-    case 4:
-      dr.mult(60 * this.m / Math.pow(r, 4));
+    case "4":
+      dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 4));;
       break;
     }
-    rocket.v.sub(dr);
+    rocket.a.add(da);
   }
 }
 
 
-
-function setup() {
-  createCanvas(900, 600);  
-  generateStars(250);
-  textFont("Roboto");
-
-}
-
 /*
-* Check if one of the "add potential"
-* buttons was clicked
-*/
-function mouseClicked() {
-  for (let i = 0; i < buttons.length; i++) {
-    button = buttons[i];
-    r = dist(mouseX, mouseY, button[1], button[2]);
-    if (r < button[3]) {
-      pressed_button = i;
-      cursor(CROSS);
-      break;
-    }
-  }
-}
-
-/*
-* If the mouse is pressed and
-* an "add potential" button was 
-* pressed, then start creating a planet
-*/
+ * If the mouse is pressed over a button, then update
+ *   the state with the currently pressed button.
+ * Otherwise, start positioning a rocket or expanding a potential.
+ */
 
 function mousePressed() {
-  prev_mouse_pos = createVector(mouseX, mouseY);
-  if (pressed_button >= 0) {
-    pressed = true;
-    center_x = mouseX;
-    center_y = mouseY;
+  const curr_mouse_pos = createVector(mouseX, mouseY);
+
+  for (const [key, button] of Object.entries(buttons)) {
+    if (button.r.dist(curr_mouse_pos) < button.m) {
+      state.prev_mouse_pos = null;
+      state.pressed_button_key = key;
+      return;
+    }
   }
+
+  // Change cursor when positioning a rocket
+  cursor(CROSS);
+  state.prev_mouse_pos = curr_mouse_pos;
 }
 
+
 /*
-* Upon mouse release, if the user
-* was making a planet, then add that
-* planet to the circles array. Will only do this
-* for radii within set bounds.
-*/
+ * If the mouse is released while positioning a rocket
+ *   or expanding a potential, then create that object.
+ * Display a warning message if the potential is too big or small.
+ */
+
 function mouseReleased() {
   const curr_mouse_pos = createVector(mouseX, mouseY);
-  if (pressed) {
-    let radius = dist(mouseX, mouseY, center_x, center_y);
-    if (radius > MIN_RADIUS && radius < MAX_RADIUS) { 
-      append(potentials, new Potential(
-          curr_mouse_pos,
-          pressed_button + 1,
-          radius,
-      ));
-	}
-    pressed = false;
-    pressed_button = -1;
+
+  if (state.prev_mouse_pos !== null) {
+    // Change cursor after the rocket or potential is created
     cursor(ARROW);
-  } else if (prev_mouse_pos !== null) {
-    append(rockets, new Rocket(
-        curr_mouse_pos,
-        p5.Vector.sub(curr_mouse_pos, prev_mouse_pos).div(20),
-        0,
-    ));
+
+    if (state.pressed_button_key !== null) {
+      const radius = curr_mouse_pos.dist(state.prev_mouse_pos);
+      if (radius > POTENTIAL_MIN_RADIUS && radius < POTENTIAL_MAX_RADIUS) {
+        potentials.add(new Potential(
+            curr_mouse_pos,
+            state.pressed_button_key,
+            radius,
+        ));
+      }
+      state.pressed_button_key = null;
+    } else {
+      rockets.add(new Rocket(
+          curr_mouse_pos,
+          p5.Vector.sub(curr_mouse_pos, state.prev_mouse_pos)
+              .mult(SCALE_DISPLACEMENT_VELOCITY),
+      ));
+    }
+  } else if (state.pressed_button_key != null) {
+    // Change cursor after clicking on a button, to show that it is active
+    cursor(CROSS);
   }
-  prev_mouse_pos = null;
+
+  state.prev_mouse_pos = null;
 }
+
 
 function draw() {
 
@@ -187,37 +230,48 @@ function draw() {
   background(color(5, 22, 40));
   drawStars();
 
-  // Click and drag to create planet
-  // and display message if drawn
-  // radius is out of range
-  if (pressed) {
-  	createPlanetStr = "";
-	stroke(255);
-	currRadius = dist(mouseX, mouseY, center_x, center_y);
-	line(center_x, center_y, mouseX, mouseY);
-	noStroke();
-	if (currRadius < MIN_RADIUS) {
-		createPlanetStr += "Radius too small";
-	} else if (currRadius > MAX_RADIUS) {
-		createPlanetStr += "Radius too large";
-	}
-	// Display message if drawing planet
-  	// and it's out of set radius range
-  	fill(255);
-  	text(createPlanetStr, mouseX+15, mouseY+15);
-  }
-
-  // Draw toolbar buttons
-  for (button of buttons) {
-    drawButton(button);
-  }
-
-  for (const rocket of rockets) {
-    rocket.draw();
-  }
   for (const pot of potentials) {
     pot.draw();
   }
+  for (const rocket of rockets) {
+    rocket.draw();
+  }
+
+  // Click and drag to create planet
+  // and display message if drawn
+  // radius is out of range
+  const curr_mouse_pos = createVector(mouseX, mouseY);
+  if (state.prev_mouse_pos != null) {
+    stroke(COLOUR_WHITE);
+    line(curr_mouse_pos.x, curr_mouse_pos.y,
+        state.prev_mouse_pos.x, state.prev_mouse_pos.y);
+    noStroke();
+
+    // Display message if drawing planet and it's out of set radius range
+    if (state.pressed_button_key != null) {
+      const currRadius = curr_mouse_pos.dist(state.prev_mouse_pos);
+      fill(COLOUR_WHITE);
+      if (currRadius < POTENTIAL_MIN_RADIUS) {
+        text(
+            "Radius too small",
+            curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+            curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+        );
+      } else if (currRadius > POTENTIAL_MAX_RADIUS) {
+        text(
+            "Radius too large",
+            curr_mouse_pos.x + POTENTIAL_WARNING_MESSAGE_OFFSET,
+            curr_mouse_pos.y + POTENTIAL_WARNING_MESSAGE_OFFSET,
+        );
+      }
+    }
+  }
+
+  // Draw toolbar buttons over everything else
+  for (const button of Object.values(buttons)) {
+    drawButton(button);
+  }
+
   calculatePotential();
   moveRockets();
 }
@@ -234,19 +288,23 @@ function calculatePotential() {
 
 function moveRockets() {
   for (const rocket of rockets) {
-    rocket.r.add(rocket.v);
+    rocket.update();
   }
 }
 
 
 function drawButton(button) {
-  textSize(12);
-  fill(255);
-  text('Add ' + button[0], button[1]-60, button[2]+5);
-  fill(color(button[4][0],button[4][1],button[4][2]));
-  
-  stroke(255);
-  circle(button[1], button[2], button[3]);
+  textSize(BUTTON_TEXT_SIZE);
+  fill(COLOUR_WHITE);
+  text(
+      `Add ${button.name}`,
+      button.r.x + BUTTON_HORIZONTAL_TEXT_OFFSET,
+      button.r.y + BUTTON_VERTICAL_TEXT_OFFSET,
+  );
+  fill(button.color);
+
+  stroke(COLOUR_WHITE);
+  circle(button.r.x, button.r.y, button.m);
   noStroke();
 }
 
@@ -254,67 +312,57 @@ function drawButton(button) {
 * Drawing planets and stars and sky
 */
 
-function drawPlanet(crc) {
-	button = buttons[crc[3]];
-	startColor  = [button[4][0],button[4][1],button[4][2]];
-  	drawPlanetGradient(crc[0], crc[1], crc[2], startColor);
-}
+function drawPlanetGradient(x, y, radius, colour) {
+  // TODO: fix this hack, come up with HSL way to draw gradient
+  const color_string = colour.toString();
+  const col = color_string.slice(5, -1).split(',');
 
-function drawPlanetGradient(x, y, radius, col) {
-	
-	let isBigPlanet = radius > 125;
+  fill(color(
+        Math.max(col[0] - radius, 10),
+        Math.max(col[1] - radius, 43),
+        Math.max(col[2] - radius, 90),
+  ));
 
-	fill(
-		color(
-			Math.max(col[0]-radius, 10),
-			Math.max(col[1]-radius, 43),
-			Math.max(col[2]-radius, 90),
-		)
-	);
+  for (let r = Math.floor(radius); r > 0; r--) {
+    if (radius > POTENTIAL_BIG_RADIUS) {
+      if (r % 4 == 0 || r == Math.floor(radius)) {
+        fill(color(
+            Math.max(col[0] - r, 15),
+            Math.max(col[1] - r, 20),
+            Math.max(col[2] - r, 40),
+        ));
+      }
+    } else {
+      if (r % 3 == 0 || r == Math.floor(radius)) {
+        fill(color(
+            Math.max(col[0] - r, 10),
+            Math.max(col[1] - r, 43),
+            Math.max(col[2] - r, 70),
+        ));
+      }
+    }
 
-	for (let r = Math.floor(radius); r > 0; r--) {
-		if (isBigPlanet) {
-			if (r % 4 == 0) {
-				fill(
-					color(
-						Math.max(col[0]-r, 15),
-						Math.max(col[1]-r, 20),
-						Math.max(col[2]-r, 40),
-					)
-				);
-			}
-		} else {
-			if (r % 3 == 0) {
-				fill(
-					color(
-						Math.max(col[0]-r, 10),
-						Math.max(col[1]-r, 43),
-						Math.max(col[2]-r, 70),
-					)
-				);
-			}
-		}
-		
-		circle(x, y, r);
-	
-	}
+    circle(x, y, r);
+  }
 }
 
 // For generating stars in the background
 function generateStars(numStars) {
-	for (let i = 0; i < numStars; i++) {
-		let x = random(900);
-		let y = random(540);	
-		stars.push([x,y]);
-	}
+  for (let i = 0; i < numStars; i++) {
+    // Alternate between white and light yellow
+    stars.add({
+      r: createVector(
+          random(SCREEN_WIDTH),
+          random(SCREEN_HEIGHT - TOOLBAR_HEIGHT),
+      ),
+      colour: (i % 2) ? COLOUR_WHITE : color(255, 246, 221),
+    });
+  }
 }
 
 function drawStars() {
-	for (let i = 0; i < stars.length; i++) {
-		// alternate between white and light yellow
-		i % 2 == 0 ? fill(255) : fill(color(255,246,221));
-		let x = stars[i][0];
-		let y = stars[i][1];
-		circle(x,y,1);
-	}
+  for (const star of stars) {
+    fill(star.colour);
+    circle(star.r.x, star.r.y, STAR_SIZE);
+  }
 }
