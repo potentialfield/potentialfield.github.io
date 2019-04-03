@@ -35,6 +35,8 @@ const stars = new Set();
 const rockets = new Set();
 const potentials = new Set();
 
+let RADII = [50, 100, 150, 200, 250, 300];
+
 const state = {
   prev_mouse_pos: null,
   pressed_button_key: null,
@@ -71,6 +73,19 @@ function setup() {
   createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
   generateStars(NUM_STARS);
   textFont("Roboto");
+  
+  potentials.add(new Potential(
+            createVector(450, 300),
+            "2",
+            50,
+  ));
+  for (const r of RADII) {
+    rockets.add(new Rocket(
+          createVector(450, 300-r),
+          createVector(Math.sqrt(1125/r), 0),
+    ));
+  }
+  
 }
 
 
@@ -236,6 +251,14 @@ function draw() {
   for (const rocket of rockets) {
     rocket.draw();
   }
+
+  noFill();
+  stroke(COLOUR_WHITE);
+  for (const r of RADII) {
+    circle(450, 300, r);
+  }
+  noStroke();
+  fill(5, 22, 40);
 
   // Click and drag to create planet
   // and display message if drawn
