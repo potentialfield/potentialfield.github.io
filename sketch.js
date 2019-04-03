@@ -35,6 +35,9 @@ const stars = new Set();
 const rockets = new Set();
 const potentials = new Set();
 
+let hyperbola = [201, 201, 202, 202, 203, 203, 204, 204, 205, 206, 207, 208, 210, 212, 214, 217, 223, 230,
+ 239, 253, 271, 293, 319, 345, 375, 405, 435, 465, 495, 530, 565, 600, 635, 670];
+
 const state = {
   prev_mouse_pos: null,
   pressed_button_key: null,
@@ -71,6 +74,18 @@ function setup() {
   createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
   generateStars(NUM_STARS);
   textFont("Roboto");
+
+  potentials.add(new Potential(
+            createVector(450, 300),
+            "2",
+            50,
+  ));
+
+  rockets.add(new Rocket(
+          createVector(0, 200),
+          p5.Vector.sub(createVector(100, 100), createVector(0, 100))
+              .mult(SCALE_DISPLACEMENT_VELOCITY),
+  ));
 }
 
 
@@ -80,6 +95,9 @@ class Rocket {
   constructor(r, v) {
     this.r = r;
     this.v = v;
+    print("Rocket initial velocity and location");
+    print(v);
+    print(r);
     this.a = createVector(0, 0);
     this.traj = [];
     this.color = [floor(random(255)), floor(random(255)), floor(random(255))];
@@ -107,6 +125,10 @@ class Rocket {
           TRAJECTORY_SIZE,
       );
     }
+
+    print("Rocket velocity and location");
+    print(this.v);
+    print(this.r);
   }
 
   update() {
@@ -139,8 +161,10 @@ class Potential {
 
   update(rocket) {
     const dr = p5.Vector.sub(rocket.r, this.r);
+    print("Rocket distance");
     const r = dr.mag();
-    const da = dr.mult(this.m).div(-r);
+    print(r);
+    dr.mult(this.m).div(-r);
 
     // da is a unit vector in the correct direction
     switch (this.k) {
@@ -157,7 +181,7 @@ class Potential {
       dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 4));;
       break;
     }
-    rocket.a.add(da);
+    rocket.a.add(dr);
   }
 }
 
@@ -229,6 +253,17 @@ function draw() {
   // Render stars and background
   background(color(5, 22, 40));
   drawStars();
+
+  stroke(COLOUR_WHITE);
+  x_0 = 0;
+  y_0 = 200;
+  for (const value of hyperbola) {
+  	line(x_0, y_0, x_0 + 25, value);
+  	x_0 += 25;
+  	y_0 = value;
+  }
+  noStroke();
+  
 
   for (const pot of potentials) {
     pot.draw();
