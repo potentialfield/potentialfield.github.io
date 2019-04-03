@@ -96,7 +96,7 @@ class Rocket {
 
     this.traj.push([this.r.x, this.r.y]);
     if (this.traj.length > TRAJECTORY_REFRESH) {
-      this.traj.splice(this.traj.length - TRAJECTORY_LENGTH);
+      this.traj = this.traj.splice(this.traj.length - TRAJECTORY_LENGTH);
     }
     for (let i = 0; i < this.traj.length && i < TRAJECTORY_LENGTH; i++) {
       noStroke();
