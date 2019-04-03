@@ -35,6 +35,13 @@ const stars = new Set();
 const rockets = new Set();
 const potentials = new Set();
 
+
+let VELOCITY = [3.5, 4, 4.2, 4.4];
+let CENTER_X = [];
+let CENTER_Y = [];
+let HEIGHT = [];
+let WIDTH = [];
+
 const state = {
   prev_mouse_pos: null,
   pressed_button_key: null,
@@ -71,6 +78,35 @@ function setup() {
   createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
   generateStars(NUM_STARS);
   textFont("Roboto");
+
+  potentials.add(new Potential(
+            createVector(150,300),
+            "2",
+            50,
+  )); 
+
+  for (const v of VELOCITY) {
+    rockets.add(new Rocket(
+          createVector(50, 300),
+          createVector(0, -v),
+    ));
+  } 
+
+  const u = 1125;
+  const r = 100;
+  for (const v of VELOCITY) {
+    const h = v;
+    const e = v*v/2 - u / r;
+    const C = r*r * h*h / u;
+    const E = Math.sqrt(1 + (2 * e * h*h*r*r) / (u*u));
+    const rmax = C / (1-E);
+    const rmin = C / (1+E);
+    const rside = (rmax + rmin)*Math.sqrt(1-E*E);
+    CENTER_X.push(150+rmax/2-rmin/2);
+    CENTER_Y.push(300);
+    HEIGHT.push(rside);
+    WIDTH.push(rmin + rmax);
+  }
 }
 
 
@@ -236,6 +272,17 @@ function draw() {
   for (const rocket of rockets) {
     rocket.draw();
   }
+
+  noFill();
+  stroke(COLOUR_WHITE);
+
+  const u = 1125;
+  const r = 100;
+  for (let i = 0; i < VELOCITY.length; i++) {
+    ellipse(CENTER_X[i], CENTER_Y[i], WIDTH[i], HEIGHT[i]);
+  }
+  noStroke();
+  fill(5, 22, 40);
 
   // Click and drag to create planet
   // and display message if drawn
