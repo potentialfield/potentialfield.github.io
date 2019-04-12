@@ -58,8 +58,8 @@ function setup() {
       m: BUTTON_SIZE,
       color: color(156, 41, 127),
     },
-    3: {
-      name: "r^-3",
+    5: {
+      name: "r",
       r: createVector(
           BUTTON_HORIZONTAL_POS + 2 * BUTTON_HORIZONTAL_SPACING,
           BUTTON_VERTICAL_POS,
@@ -71,6 +71,38 @@ function setup() {
   createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
   generateStars(NUM_STARS);
   textFont("Roboto");
+
+  potentials.add(new Potential(
+            createVector(450, 200),
+            "5",
+            5,
+  ));
+
+  potentials.add(new Potential(
+            createVector(450, 400),
+            "5",
+            5,
+  ));
+
+  rockets.add(new Rocket(
+          createVector(150, 300),
+          createVector(0, 0),
+  ));
+
+  rockets.add(new Rocket(
+          createVector(450, 300),
+          createVector(300*Math.sqrt(2*(5*5*5)*SCALE_RADIUS_MASS/SCALE_POTENTIAL_POWER), 0),
+  ));
+
+  rockets.add(new Rocket(
+          createVector(750, 300),
+          createVector(0, 0),
+  ));
+
+  rockets.add(new Rocket(
+          createVector(450, 300),
+          createVector(-300*Math.sqrt(2*(5*5*5)*SCALE_RADIUS_MASS/SCALE_POTENTIAL_POWER), 0),
+  ));
 }
 
 
@@ -155,6 +187,9 @@ class Potential {
       break;
     case "4":
       dr.mult(Math.pow(SCALE_POTENTIAL_POWER / r, 4));;
+      break;
+    case "5":
+      dr.mult(r / SCALE_POTENTIAL_POWER);;
       break;
     }
     rocket.a.add(da);
